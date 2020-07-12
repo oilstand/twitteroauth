@@ -545,7 +545,7 @@ class TwitterOAuth extends Config
             $url .= '?' . Util::buildHttpQuery($postfields);
         }
 
-        $client = new \GuzzleHttp\Client();
+        $client = new \GuzzleHttp\Client(['http_errors' => false]);
         try {
             $response = $client->request($method, $url, $options);
 
