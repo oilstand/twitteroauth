@@ -546,9 +546,13 @@ class TwitterOAuth extends Config
         }
 
         $client = new \GuzzleHttp\Client();
-        $response = $client->request($method, $url, $options);
+        try {
+            $response = $client->request($method, $url, $options);
 
-        $statusCode = $response->getStatusCode();
+            $statusCode = $response->getStatusCode();
+        } catch (Exception $e) {
+            $statusCode = 500;
+        }
 
         // Throw exceptions on cURL errors.
         if ($statusCode != 200) {
