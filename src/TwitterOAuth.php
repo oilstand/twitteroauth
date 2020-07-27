@@ -555,7 +555,16 @@ class TwitterOAuth extends Config
             $error = $e->getMessage() . '('.$e->getCode().')';
         }
 
-        throw new TwitterOAuthException(array('method'=>$method, 'url'=>$url, 'options'=>$options));
+        throw new TwitterOAuthException(
+            array(
+                'method'=>$method,
+                'url'=>$url,
+                'options'=>$options,
+                'status'=>$statusCode,
+                'resbody'=>$response->getBody(),
+                'reshead'=>$response->getHeaders()
+                )
+        );
 
         // Throw exceptions on cURL errors.
         if ($statusCode != 200) {
