@@ -555,7 +555,7 @@ class TwitterOAuth extends Config
             $error = $e->getMessage() . '('.$e->getCode().')';
         }
 
-        var_dump(
+        /*var_dump(
             array(
                 'method'=>$method,
                 'url'=>$url,
@@ -564,7 +564,7 @@ class TwitterOAuth extends Config
                 'resbody'=>$response->getBody(),
                 'reshead'=>$response->getHeaders()
                 )
-        );
+        );*/
 
         // Throw exceptions on cURL errors.
         if ($statusCode != 200) {
