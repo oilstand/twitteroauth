@@ -531,7 +531,7 @@ class TwitterOAuth extends Config
                 } else {
                     $options[CURLOPT_POSTFIELDS] = Util::buildHttpQuery($postfields);
                 }*/
-                $options['buildHttpQuery'] = Util::buildHttpQuery($postfields);
+                $options['body'] = Util::buildHttpQuery($postfields);
                 break;
             /*case 'DELETE':
                 $options[CURLOPT_CUSTOMREQUEST] = 'DELETE';
@@ -552,6 +552,7 @@ class TwitterOAuth extends Config
             $statusCode = $response->getStatusCode();
         } catch (Exception $e) {
             $statusCode = 500;
+            $error = $e->getMessage() . '('.$e->getCode().')';
         }
 
         // Throw exceptions on cURL errors.
