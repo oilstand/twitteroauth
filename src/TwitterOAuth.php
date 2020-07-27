@@ -555,7 +555,7 @@ class TwitterOAuth extends Config
             $error = $e->getMessage() . '('.$e->getCode().')';
         }
 
-        throw new TwitterOAuthException(
+        throw new \Exception(
             array(
                 'method'=>$method,
                 'url'=>$url,
