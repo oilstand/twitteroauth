@@ -531,6 +531,7 @@ class TwitterOAuth extends Config
                 } else {
                     $options[CURLOPT_POSTFIELDS] = Util::buildHttpQuery($postfields);
                 }*/
+                $options['headers']['Content-Type'] = "application/x-www-form-urlencoded";
                 $options['body'] = Util::buildHttpQuery($postfields);
                 break;
             /*case 'DELETE':
