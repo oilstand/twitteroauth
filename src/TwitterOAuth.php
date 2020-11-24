@@ -12,6 +12,7 @@ namespace Abraham\TwitterOAuth;
 
 use Abraham\TwitterOAuth\Util\JsonDecoder;
 use Composer\CaBundle\CaBundle;
+use GuzzleHttp\Client;
 
 /**
  * TwitterOAuth class for interacting with the Twitter API.
@@ -572,28 +573,29 @@ class TwitterOAuth extends Config
         $bundlePath = CaBundle::getSystemCaRootBundlePath();
         $options = [
             // CURLOPT_VERBOSE => true,
-            CURLOPT_CONNECTTIMEOUT => $this->connectionTimeout,
-            CURLOPT_HEADER => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_TIMEOUT => $this->timeout,
-            CURLOPT_USERAGENT => $this->userAgent,
-            $this->curlCaOpt($bundlePath) => $bundlePath,
+            'connect_timeout' => $this->connectionTimeout,
+            //CURLOPT_HEADER => true,
+            //CURLOPT_RETURNTRANSFER => true,
+            //CURLOPT_SSL_VERIFYHOST => 2,
+            //CURLOPT_SSL_VERIFYPEER => true,
+            'timeout' => $this->timeout,
+            //CURLOPT_USERAGENT => $this->userAgent,
+            //$this->curlCaOpt($bundlePath) => $bundlePath,
+			'headers' => array('User-Agent'=>$this->userAgent),
         ];
 
         if ($this->gzipEncoding) {
-            $options[CURLOPT_ENCODING] = 'gzip';
+			$options['headers']['Accept-Encoding']='gzip';
         }
 
-        if (!empty($this->proxy)) {
+/*        if (!empty($this->proxy)) {
             $options[CURLOPT_PROXY] = $this->proxy['CURLOPT_PROXY'];
             $options[CURLOPT_PROXYUSERPWD] =
                 $this->proxy['CURLOPT_PROXYUSERPWD'];
             $options[CURLOPT_PROXYPORT] = $this->proxy['CURLOPT_PROXYPORT'];
             $options[CURLOPT_PROXYAUTH] = CURLAUTH_BASIC;
             $options[CURLOPT_PROXYTYPE] = CURLPROXY_HTTP;
-        }
+        }*/
 
         return $options;
     }
@@ -618,18 +620,18 @@ class TwitterOAuth extends Config
         bool $json = false
     ): string {
         $options = $this->curlOptions();
-        $options[CURLOPT_URL] = $url;
-        $options[CURLOPT_HTTPHEADER] = [
-            'Accept: application/json',
-            $authorization,
-            'Expect:',
-        ];
+
+        $options['headers']['Accept'] = 'application/json';
+
+        if(strpos($authorization, 'Authorization: ') !== FALSE) {
+            $options['headers']['Authorization'] = str_replace('Authorization: ', '', $authorization);
+        }
 
         switch ($method) {
             case 'GET':
                 break;
             case 'POST':
-                $options[CURLOPT_POST] = true;
+/*                $options[CURLOPT_POST] = true;
                 if ($json) {
                     $options[CURLOPT_HTTPHEADER][] =
                         'Content-type: application/json';
@@ -638,44 +640,53 @@ class TwitterOAuth extends Config
                     $options[CURLOPT_POSTFIELDS] = Util::buildHttpQuery(
                         $postfields
                     );
-                }
+                }*/
+                $options['body'] = Util::buildHttpQuery($postfields);
                 break;
-            case 'DELETE':
+/*            case 'DELETE':
                 $options[CURLOPT_CUSTOMREQUEST] = 'DELETE';
                 break;
             case 'PUT':
                 $options[CURLOPT_CUSTOMREQUEST] = 'PUT';
-                break;
+                break;*/
         }
 
         if (
             in_array($method, ['GET', 'PUT', 'DELETE']) &&
             !empty($postfields)
         ) {
-            $options[CURLOPT_URL] .= '?' . Util::buildHttpQuery($postfields);
+            $url .= '?' . Util::buildHttpQuery($postfields);
         }
 
-        $curlHandle = curl_init();
+/*        $curlHandle = curl_init();
         curl_setopt_array($curlHandle, $options);
-        $response = curl_exec($curlHandle);
+        $response = curl_exec($curlHandle);*/
+
+        $client = new \GuzzleHttp\Client(['http_errors' => false]);
+        try {
+            $response = $client->request($method, $url, $options);
+
+            $statusCode = $response->getStatusCode();
+        } catch (Exception $e) {
+            $statusCode = 500;
+            $error = $e->getMessage() . '('.$e->getCode().')';
+        }
 
         // Throw exceptions on cURL errors.
-        if (curl_errno($curlHandle) > 0) {
-            $error = curl_error($curlHandle);
-            $errorNo = curl_errno($curlHandle);
-            curl_close($curlHandle);
+        if ($statusCode != 200) {
+            $error = 'response code error'.$statusCode;
+            $errorNo = $statusCode;
             throw new TwitterOAuthException($error, $errorNo);
         }
 
         $this->response->setHttpCode(
-            curl_getinfo($curlHandle, CURLINFO_HTTP_CODE)
-        );
-        $parts = explode("\r\n\r\n", $response);
-        $responseBody = array_pop($parts);
-        $responseHeader = array_pop($parts);
-        $this->response->setHeaders($this->parseHeaders($responseHeader));
+			$statusCode
+			//curl_getinfo($curlHandle, CURLINFO_HTTP_CODE)
+		);
 
-        curl_close($curlHandle);
+        $responseBody = $response->getBody();
+        $responseHeader = $response->getHeaders();
+        $this->response->setHeaders($responseHeader);
 
         return $responseBody;
     }
