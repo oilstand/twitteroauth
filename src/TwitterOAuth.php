@@ -688,7 +688,7 @@ class TwitterOAuth extends Config
         $responseHeader = $response->getHeaders();
         $this->response->setHeaders($responseHeader);
 
-        return $responseBody;
+        return "".$responseBody;
     }
 
     /**
